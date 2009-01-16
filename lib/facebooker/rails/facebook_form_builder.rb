@@ -2,7 +2,6 @@ module Facebooker
   module Rails
     class FacebookFormBuilder < ActionView::Helpers::FormBuilder
       
-      
       second_param = %w(password_field file_field check_box date_select datetime_select time_select)
       third_param = %w(radio_button country_select select time_zone_select)
       fifth_param = %w(collection_select)
@@ -13,9 +12,9 @@ module Facebooker
           build_shell(field,options) do
             super
           end
-        end    
+        end
       end
-
+      
       second_param.each do |name|
         create_with_offset(name,0)
       end
@@ -40,14 +39,12 @@ module Facebooker
         @template.content_tag "fb:editor-custom",string, :label=>label_for("",options)
       end
       
-      
       def text_field(method, options = {})
         options[:label] ||= label_for(method,options)
         add_default_name_and_id(options,method)
         options["value"] ||= value_before_type_cast(object,method)
         @template.content_tag("fb:editor-text","",options)
       end
-      
       
       def text_area(method, options = {})
         options[:label] ||= label_for(method,options)
@@ -89,7 +86,7 @@ module Facebooker
           @template.content_tag("fb:multi-friend-input","",options)
         end
       end
-
+      
       def buttons(*names)
         buttons=names.map do |name|
           create_button(name)
@@ -100,6 +97,10 @@ module Facebooker
       
       def create_button(name)
         @template.content_tag("fb:editor-button","",:value=>name,:name=>"commit")
+      end
+      
+      def cancel_button(name, url)
+         @template.content_tag("fb:editor-cancel","",:value=>name,:name=>"cancel",:href=>url)
       end
       
       def add_default_name_and_id(options,method)

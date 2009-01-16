@@ -18,11 +18,11 @@ module Facebooker
       hash = JSON.parse(CGI.unescapeHTML(json))
       @properties = ApplicationProperties.from_hash(hash)
     end
-  
+    
     # Integration points include..
     #   :notifications_per_day, :requests_per_day, :emails_per_day, :email_disable_message_location
     def get_allocation(integration_point)
       @session.post('facebook.admin.getAllocation', :integration_point_name => integration_point.to_s).to_i
-    end    
+    end
   end
 end

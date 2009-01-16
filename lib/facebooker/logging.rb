@@ -7,7 +7,7 @@ module Facebooker
   def self.logger
     @@logger
   end
-
+  
   module Logging
     
     def self.skip_api_logging=(val)
@@ -17,7 +17,6 @@ module Facebooker
     def self.skip_api_logging
       @skip_api_logging
     end
-    
     
     def self.log_fb_api(method, params)
       message = method # might customize later
@@ -47,5 +46,5 @@ module Facebooker
       Facebooker.logger.debug(log_message)
     end
     
-  end  
+  end
 end

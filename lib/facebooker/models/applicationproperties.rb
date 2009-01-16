@@ -34,6 +34,6 @@ module Facebooker
                :dev_mode, :preload_fql, :icon_url, :canvas_name, :logo_url, :connect_logo_url ]
     
     attr_accessor *FIELDS
-         
+    
   end
 end

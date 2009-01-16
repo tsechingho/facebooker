@@ -1,3 +1,4 @@
+require 'action_pack'
 module Facebooker
   module Rails
     
@@ -15,7 +16,8 @@ module Facebooker
       # cancel_button is true or false
       def fb_dialog( id, cancel_button, &block )
         content = capture(&block)
-        concat( content_tag("fb:dialog", content, {:id => id, :cancel_button => cancel_button}), block.binding )
+        fbml = content_tag("fb:dialog", content, {:id => id, :cancel_button => cancel_button})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       def fb_dialog_title( title )
@@ -23,8 +25,9 @@ module Facebooker
       end
       
       def fb_dialog_content( &block )
-        content = capture(&block)  
-        concat( content_tag("fb:dialog-content", content), block.binding )      
+        content = capture(&block)
+        fbml = content_tag("fb:dialog-content", content)
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       def fb_dialog_button( type, value, options={} )
@@ -52,29 +55,28 @@ module Facebooker
       #  <% end %>
       def fb_request_form(type,message_param,url,options={},&block)
         content = capture(&block)
-        message = @template.instance_variable_get("@content_for_#{message_param}") 
-        concat(content_tag("fb:request-form", content + token_tag,
-                  {:action=>url,:method=>"post",:invite=>true,:type=>type,:content=>message}.merge(options)),
-              block.binding)
+        message = @template.instance_variable_get("@content_for_#{message_param}")
+        fbml = content_tag("fb:request-form", content + token_tag,
+                  {:action=>url,:method=>"post",:invite=>true,:type=>type,:content=>message}.merge(options))
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
 
-			# Create a submit button for an <fb:request-form>
-			# If the request is for an individual user you can optionally
-			# Provide the user and a label for the request button.
-			# For example
-			#   <% content_for("invite_user") do %>
-			#     This gets sent in the invite. <%= fb_req_choice("Come join us!",new_invite_path) %>
-			#   <% end %>
-			#   <% fb_request_form("Invite","invite_user",create_invite_path) do %>
-			#     Invite <%= fb_name(@facebook_user.friends.first.id)%> to the party <br />
-			#     <%= fb_request_form_submit(@facebook_user.friends.first.id,"Invite %n") %>
-			#   <% end %>
-			# <em>See:</em> http://wiki.developers.facebook.com/index.php/Fb:request-form-submit for options
-			def fb_request_form_submit(options={})
-			   tag("fb:request-form-submit",stringify_vals(options))
-			end                                              
-
-
+      # Create a submit button for an <fb:request-form>
+      # If the request is for an individual user you can optionally
+      # Provide the user and a label for the request button.
+      # For example
+      #   <% content_for("invite_user") do %>
+      #     This gets sent in the invite. <%= fb_req_choice("Come join us!",new_invite_path) %>
+      #   <% end %>
+      #   <% fb_request_form("Invite","invite_user",create_invite_path) do %>
+      #     Invite <%= fb_name(@facebook_user.friends.first.id)%> to the party <br />
+      #     <%= fb_request_form_submit(@facebook_user.friends.first.id,"Invite %n") %>
+      #   <% end %>
+      # <em>See:</em> http://wiki.developers.facebook.com/index.php/Fb:request-form-submit for options
+      def fb_request_form_submit(options={})
+         tag("fb:request-form-submit",stringify_vals(options))
+      end                                              
+      
       # Create an fb:request-form with an fb_multi_friend_selector inside
       # 
       # The content of the block are used as the message on the form,
@@ -86,11 +88,8 @@ module Facebooker
       #  <% end %>
       def fb_multi_friend_request(type,friend_selector_message,url,&block)
         content = capture(&block)
-        concat(content_tag("fb:request-form",
-                            fb_multi_friend_selector(friend_selector_message) + token_tag,
-                            {:action=>url,:method=>"post",:invite=>true,:type=>type,:content=>content}
-                            ),
-              block.binding)
+        fbml = content_tag("fb:request-form", fb_multi_friend_selector(friend_selector_message) + token_tag,{:action=>url,:method=>"post",:invite=>true,:type=>type,:content=>content})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       # Render an <fb:friend-selector> element
@@ -105,7 +104,7 @@ module Facebooker
       def fb_multi_friend_input(options={})
         tag "fb:multi-friend-input",stringify_vals(options)
       end
-
+      
       # Render an <fb:multi-friend-selector> with the passed in welcome message
       # Full version shows all profile pics for friends.  
       # <em> See: </em> http://wiki.developers.facebook.com/index.php/Fb:multi-friend-selector for options 
@@ -114,7 +113,7 @@ module Facebooker
         options = options.dup
         tag("fb:multi-friend-selector",stringify_vals({:showborder=>false,:actiontext=>message,:max=>20}.merge(options)))
       end
-
+      
       # Render a condensed <fb:multi-friend-selector> with the passed in welcome message 
       # Condensed version show checkboxes for each friend.
       # <em> See: </em> http://wiki.developers.facebook.com/index.php/Fb:multi-friend-selector_%28condensed%29 for options
@@ -123,52 +122,51 @@ module Facebooker
         options = options.dup
         tag("fb:multi-friend-selector",stringify_vals(options.merge(:condensed=>true)))
       end
-
+      
       # Render a button in a request using the <fb:req-choice> tag
       # url must be an absolute url
       # This should be used inside the block of an fb_multi_friend_request  
       def fb_req_choice(label,url)
         tag "fb:req-choice",:label=>label,:url=>url
       end
-     
-     # Create a facebook form using <fb:editor>
-     #
-     # It yields a form builder that will convert the standard rails form helpers 
-     # into the facebook specific version. 
-     #
-     # Example:
-     #  <% facebook_form_for(:poke,@poke,:url => create_poke_path) do |f| %>
-     #    <%= f.text_field :message, :label=>"message" %>
-     #    <%= f.buttons "Save Poke" %>
-     #  <% end %>
-     #
-     #  will generate
-     #
-     #  <fb:editor action="/pokes/create">
-     #    <fb:editor-text name="poke[message]" id="poke_message" value="" label="message" />
-     #    <fb:editor-buttonset>
-     #     <fb:editor-button label="Save Poke"
-     #    </fb:editor-buttonset>
-     #  </fb:editor>
-     def facebook_form_for( record_or_name_or_array,*args, &proc)
+      
+      # Create a facebook form using <fb:editor>
+      #
+      # It yields a form builder that will convert the standard rails form helpers 
+      # into the facebook specific version. 
+      #
+      # Example:
+      #  <% facebook_form_for(:poke,@poke,:url => create_poke_path) do |f| %>
+      #    <%= f.text_field :message, :label=>"message" %>
+      #    <%= f.buttons "Save Poke" %>
+      #  <% end %>
+      #
+      #  will generate
+      #
+      #  <fb:editor action="/pokes/create">
+      #    <fb:editor-text name="poke[message]" id="poke_message" value="" label="message" />
+      #    <fb:editor-buttonset>
+      #     <fb:editor-button label="Save Poke"
+      #    </fb:editor-buttonset>
+      #  </fb:editor>
+      def facebook_form_for( record_or_name_or_array,*args, &proc)
+        raise ArgumentError, "Missing block" unless block_given?
+        options = args.last.is_a?(Hash) ? args.pop : {}
 
-       raise ArgumentError, "Missing block" unless block_given?
-       options = args.last.is_a?(Hash) ? args.pop : {}
-
-       case record_or_name_or_array
-       when String, Symbol
-         object_name = record_or_name_or_array
-       when Array
-         object = record_or_name_or_array.last
-         object_name = ActionController::RecordIdentifier.singular_class_name(object)
-         apply_form_for_options!(record_or_name_or_array, options)
-         args.unshift object
-       else
-         object = record_or_name_or_array
-         object_name = ActionController::RecordIdentifier.singular_class_name(object)
-         apply_form_for_options!([object], options)
-         args.unshift object
-       end
+        case record_or_name_or_array
+        when String, Symbol
+          object_name = record_or_name_or_array
+        when Array
+          object = record_or_name_or_array.last
+          object_name = ActionController::RecordIdentifier.singular_class_name(object)
+          apply_form_for_options!(record_or_name_or_array, options)
+          args.unshift object
+        else
+          object = record_or_name_or_array
+          object_name = ActionController::RecordIdentifier.singular_class_name(object)
+          apply_form_for_options!([object], options)
+          args.unshift object
+        end
         method = (options[:html]||{})[:method]
         options[:builder] ||= Facebooker::Rails::FacebookFormBuilder
         editor_options={}
@@ -180,11 +178,19 @@ module Facebooker
         width=options.delete(:labelwidth)
         editor_options[:labelwidth]=width unless width.blank?
 
-        concat(tag("fb:editor",editor_options,true) , proc.binding)
-        concat(tag(:input,{:type=>"hidden",:name=>:_method, :value=>method},false), proc.binding) unless method.blank?
-        concat(token_tag, proc.binding)
-        fields_for( object_name,*(args << options), &proc)
-        concat("</fb:editor>",proc.binding)
+        if ignore_binding?
+          concat(tag("fb:editor",editor_options,true))
+          concat(tag(:input,{:type=>"hidden",:name=>:_method, :value=>method},false)) unless method.blank?
+          concat(token_tag)
+          fields_for( object_name,*(args << options), &proc)
+          concat("</fb:editor>")
+        else
+          concat(tag("fb:editor",editor_options,true) , proc.binding)
+          concat(tag(:input,{:type=>"hidden",:name=>:_method, :value=>method},false), proc.binding) unless method.blank?
+          concat(token_tag, proc.binding)
+          fields_for( object_name,*(args << options), &proc)
+          concat("</fb:editor>",proc.binding)
+        end
       end
       
       # Render an fb:name tag for the given user
@@ -199,7 +205,7 @@ module Facebooker
         options.merge!(:uid => cast_to_facebook_id(user))
         content_tag("fb:name",nil, stringify_vals(options))
       end
-
+      
       FB_NAME_OPTION_KEYS_TO_TRANSFORM = {:first_name_only => :firstnameonly, 
                                           :last_name_only => :lastnameonly,
                                           :show_network => :shownetwork,
@@ -208,7 +214,7 @@ module Facebooker
                                           :subject_id => :subjectid}
       FB_NAME_VALID_OPTION_KEYS = [:firstnameonly, :linked, :lastnameonly, :possessive, :reflexive, 
                                    :shownetwork, :useyou, :ifcantsee, :capitalize, :subjectid]
-            
+      
       # Render an <fb:pronoun> tag for the specified user
       # Options give flexibility for placing in any part of a sentence.
       # <em> See </em> http://wiki.developers.facebook.com/index.php/Fb:pronoun for complete list of options.
@@ -274,9 +280,9 @@ module Facebooker
         validate_fb_photo_align_value(options)
         content_tag("fb:photo",nil, stringify_vals(options))
       end
-
+      
       FB_PHOTO_VALID_OPTION_KEYS = [:uid, :size, :align]
-
+      
       def cast_to_photo_id(object)
         object.respond_to?(:photo_id) ? object.photo_id : object
       end
@@ -288,13 +294,14 @@ module Facebooker
       
       # Render an fb:tabs tag containing some number of fb:tab_item tags.
       # Example:
-      # <% fb_tabs do %>  
-	 		 #  	   <%= fb_tab_item("Home", "home") %>  
-	 		 # 			 <%= fb_tab_item("Office", "office") %>  
-	 		 # <% end %>        
+      # <% fb_tabs do %>
+      #   <%= fb_tab_item("Home", "home") %>
+      #   <%= fb_tab_item("Office", "office") %>
+      # <% end %>
       def fb_tabs(&block)
-        content = capture(&block)  	
-        concat(content_tag("fb:tabs", content), block.binding)
+        content = capture(&block)
+        fbml = content_tag("fb:tabs", content)
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       # Render an fb:tab_item tag. 
@@ -304,13 +311,13 @@ module Facebooker
       def fb_tab_item(title, url, options={})
         options= options.dup
         options.assert_valid_keys(FB_TAB_ITEM_VALID_OPTION_KEYS)
-        options.merge!(:title => title, :href => url)  	
+        options.merge!(:title => title, :href => url)    
         validate_fb_tab_item_align_value(options)
         tag("fb:tab-item", stringify_vals(options))
       end
-
+      
       FB_TAB_ITEM_VALID_OPTION_KEYS = [:align, :selected]
-
+      
       def validate_fb_tab_item_align_value(options)
         if options.has_key?(:align) && !VALID_FB_TAB_ITEM_ALIGN_VALUES.include?(options[:align].to_sym)
           raise(ArgumentError, "Unkown value for align: #{options[:align]}")
@@ -327,7 +334,6 @@ module Facebooker
       VALID_FB_PHOTO_ALIGN_VALUES = VALID_FB_SHARED_ALIGN_VALUES
       VALID_FB_TAB_ITEM_ALIGN_VALUES = VALID_FB_SHARED_ALIGN_VALUES
       
-      
       # Create a Facebook wall. It can contain fb_wall_posts
       #
       # For Example:
@@ -336,8 +342,9 @@ module Facebooker
       #     <%= fb_wall_post(@otheruser,"This is another message") %>
       #   <% end %>
       def fb_wall(&proc)
-        content = capture(&proc)  	
-        concat(content_tag("fb:wall",content,{}),proc.binding)
+        content = capture(&proc)
+        fbml = content_tag("fb:wall",content,{})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       # Render an <fb:wallpost> tag
@@ -360,7 +367,7 @@ module Facebooker
       def fb_explanation(message, text=nil)
         fb_status_msg("explanation", message, text)
       end
-
+      
       # Render an <fb:success> tag
       # If message and text are present then this will render fb:error and fb:message tag
       # TODO: Optionally takes a decoration tag with value of 'no_padding' or 'shorten'
@@ -396,8 +403,9 @@ module Facebooker
       #   <% end %>
       def fb_dashboard(&proc)
         if block_given?
-          content = capture(&proc)  	
-          concat(content_tag("fb:dashboard",content,{}),proc.binding)
+          content = capture(&proc)
+          fbml = content_tag("fb:dashboard",content,{})
+          ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
         else
           content_tag("fb:dashboard",content,{})
         end
@@ -406,15 +414,17 @@ module Facebooker
       # Content for the wide profile box goes in this tag
       def fb_wide(&proc)
         content = capture(&proc)
-        concat(content_tag("fb:wide", content, {}), proc.binding)
+        fbml = content_tag("fb:wide", content, {})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
-
+      
       # Content for the narrow profile box goes in this tag
       def fb_narrow(&proc)
         content = capture(&proc)
-        concat(content_tag("fb:narrow", content, {}), proc.binding)
+        fbml = content_tag("fb:narrow", content, {})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
-
+      
       # Renders an action using the <fb:action> tag
       def fb_action(name, url)
         "<fb:action href=\"#{url_for(url)}\">#{name}</fb:action>"
@@ -425,30 +435,30 @@ module Facebooker
       def fb_help(name, url)
         "<fb:help href=\"#{url_for(url)}\">#{name}</fb:help>"
       end
-
+      
       # Render a <fb:create-button> tag
       # For use inside <fb:dashboard>
-			def fb_create_button(name, url)
-			 	"<fb:create-button href=\"#{url_for(url)}\">#{name}</fb:create-button>"
-			end
-			
-			# Create a comment area
-			# All the data for this content area is stored on the facebook servers.
-			# <em>See:</em> http://wiki.developers.facebook.com/index.php/Fb:comments for full details 
-			def fb_comments(xid,canpost=true,candelete=false,numposts=5,options={})
-			  options = options.dup
-                          title = (title = options.delete(:title)) ? fb_title(title) : nil 
-			  content_tag "fb:comments",title,stringify_vals(options.merge(:xid=>xid,:canpost=>canpost.to_s,:candelete=>candelete.to_s,:numposts=>numposts))
-			end
-			
-			# Adds a title to the title bar
-			#
-			# Facebook | App Name | This is the canvas page window title
-			#
+      def fb_create_button(name, url)
+        "<fb:create-button href=\"#{url_for(url)}\">#{name}</fb:create-button>"
+      end
+      
+      # Create a comment area
+      # All the data for this content area is stored on the facebook servers.
+      # <em>See:</em> http://wiki.developers.facebook.com/index.php/Fb:comments for full details 
+      def fb_comments(xid,canpost=true,candelete=false,numposts=5,options={})
+        options = options.dup
+        title = (title = options.delete(:title)) ? fb_title(title) : nil
+        content_tag "fb:comments",title,stringify_vals(options.merge(:xid=>xid,:canpost=>canpost.to_s,:candelete=>candelete.to_s,:numposts=>numposts))
+      end
+      
+      # Adds a title to the title bar
+      #
+      # Facebook | App Name | This is the canvas page window title
+      #
       # +title+: This is the canvas page window 
-			def fb_title(title)
-			 "<fb:title>#{title}</fb:title>"
-			end
+      def fb_title(title)
+        "<fb:title>#{title}</fb:title>"
+      end
       
       # Create a Google Analytics tag
       # 
@@ -463,16 +473,17 @@ module Facebooker
       # Use fb_if_user_has_added_app to determine wether the user has added the app.
       # Example: 
       # <% fb_if_is_app_user(@facebook_user) do %>
-      # 			  Thanks for accepting our terms of service!
-      # 			<% fb_else do %>
-      # 			  Hey you haven't agreed to our terms.  <%= link_to("Please accept our terms of service.", :action => "terms_of_service") %>
-      # 			<% end %>
-      #<% end %>       
+      #         Thanks for accepting our terms of service!
+      #       <% fb_else do %>
+      #         Hey you haven't agreed to our terms.  <%= link_to("Please accept our terms of service.", :action => "terms_of_service") %>
+      #       <% end %>
+      #<% end %>
       def fb_if_is_app_user(user=nil,options={},&proc)
-        content = capture(&proc) 
+        content = capture(&proc)
         options = options.dup
         options.merge!(:uid=>cast_to_facebook_id(user)) if user
-        concat(content_tag("fb:if-is-app-user",content,stringify_vals(options)),proc.binding)
+        fbml = content_tag("fb:if-is-app-user",content,stringify_vals(options))
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
 
       # Render if-user-has-added-app tag
@@ -480,15 +491,16 @@ module Facebooker
       #
       # Example: 
       # <% fb_if_user_has_added_app(@facebook_user) do %>
-      # 			  Hey you are an app user!
-      # 			<% fb_else do %>
-      # 			  Hey you aren't an app user.  <%= link_to("Add App and see the other side.", :action => "added_app") %>
-      # 			<% end %>
-      #<% end %>       
+      #   Hey you are an app user!
+      #   <% fb_else do %>
+      #     Hey you aren't an app user.  <%= link_to("Add App and see the other side.", :action => "added_app") %>
+      #   <% end %>
+      #<% end %>
       def fb_if_user_has_added_app(user,options={},&proc)
-        content = capture(&proc) 
+        content = capture(&proc)
         options = options.dup
-        concat(content_tag("fb:if-user-has-added-app",content,stringify_vals(options.merge(:uid=>cast_to_facebook_id(user)))),proc.binding)
+        fbml = content_tag("fb:if-user-has-added-app",content,stringify_vals(options.merge(:uid=>cast_to_facebook_id(user))))
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       # Render fb:if-is-user tag
@@ -496,24 +508,26 @@ module Facebooker
       # user can be a single user or an Array of users
       # Example:
       # <% fb_if_is_user(@check_user) do %>
-      # 			     <%= fb_name(@facebook_user) %> are one of the users. <%= link_to("Check the other side", :action => "friend") %>
-      # 			<% fb_else do %>
-      # 			  <%= fb_name(@facebook_user) %>  are not one of the users  <%= fb_name(@check_user) %>
-      # 			    <%= link_to("Check the other side", :action => "you") %>
-      # 			<% end %>
-      # <% end %>             
+      #   <%= fb_name(@facebook_user) %> are one of the users. <%= link_to("Check the other side", :action => "friend") %>
+      #   <% fb_else do %>
+      #     <%= fb_name(@facebook_user) %>  are not one of the users  <%= fb_name(@check_user) %>
+      #     <%= link_to("Check the other side", :action => "you") %>
+      #   <% end %>
+      # <% end %>
       def fb_if_is_user(user,&proc)
-        content = capture(&proc) 
+        content = capture(&proc)
         user = [user] unless user.is_a? Array
         user_list=user.map{|u| cast_to_facebook_id(u)}.join(",")
-        concat(content_tag("fb:if-is-user",content,{:uid=>user_list}),proc.binding)
+        fbml = content_tag("fb:if-is-user",content,{:uid=>user_list})
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       # Render fb:else tag
       # Must be used within if block such as fb_if_is_user or fb_if_is_app_user . See example in fb_if_is_app_user
       def fb_else(&proc)
-        content = capture(&proc) 
-        concat(content_tag("fb:else",content),proc.binding)
+        content = capture(&proc)
+        fbml = concat(content_tag("fb:else",content))
+        ignore_binding? ? concat(fbml) : concat(fbml, block.binding)
       end
       
       #
@@ -604,7 +618,7 @@ module Facebooker
         inner = capture(&proc)
         concat(content_tag("fb:serverfbml",inner,options),&proc.binding)
       end
-
+      
       def fb_container(options={},&proc)
         inner = capture(&proc)
         concat(content_tag("fb:container",inner,options),&proc.binding)
@@ -621,7 +635,7 @@ module Facebooker
           raise(ArgumentError, "Unkown value for size: #{options[:size]}")
         end
       end
-
+      
       def validate_fb_photo_size(options)
         if options.has_key?(:size) && !VALID_FB_PHOTO_SIZES.include?(options[:size].to_sym)
           raise(ArgumentError, "Unkown value for size: #{options[:size]}")
@@ -629,6 +643,7 @@ module Facebooker
       end
       
       private
+      
       def stringify_vals(hash)
         result={}
         hash.each do |key,value|
@@ -644,13 +659,17 @@ module Facebooker
           content_tag("fb:#{type}", content_tag("fb:message", message) + text)
         end
       end
-
+      
       def token_tag
         unless protect_against_forgery?
           ''
         else
           tag(:input, :type => "hidden", :name => request_forgery_protection_token.to_s, :value => form_authenticity_token)
         end
+      end
+      
+      def ignore_binding?
+        ActionPack::VERSION::MAJOR >= 2 && ActionPack::VERSION::MINOR >= 2
       end
     end
   end
@@ -660,7 +679,6 @@ class Hash
   def transform_keys!(transformation_hash)
     transformation_hash.each_pair{|key, value| transform_key!(key, value)}
   end
-  
   
   def transform_key!(old_key, new_key)
     swapkey!(new_key, old_key)

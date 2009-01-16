@@ -36,9 +36,9 @@ module Facebooker
       end
       if args.last.kind_of?(Hash)
         populate_from_hash!(args.pop)
-      end     
+      end
     end
-
+    
     # Returns a user's events, params correspond to API call parameters (except UID):
     # http://wiki.developers.facebook.com/index.php/Events.get
     # E.g:
@@ -53,60 +53,60 @@ module Facebooker
       @events[params.to_s] ||= @session.post('facebook.events.get', {:uid => self.id}.merge(params)).map do |event|
         Event.from_hash(event)
       end
-    end    
+    end
     
     # 
     # Set the list of friends, given an array of User objects.  If the list has been retrieved previously, will not set
     def friends=(list_of_friends,flid=nil)
       @friends_hash ||= {}
-     	flid=cast_to_friend_list_id(flid)
-     	#use __blank instead of nil so that this is cached
-     	cache_key = flid||"__blank"
-     	
+      flid=cast_to_friend_list_id(flid)
+      #use __blank instead of nil so that this is cached
+      cache_key = flid||"__blank"
+      
       @friends_hash[cache_key] ||= list_of_friends
     end
     
     def cast_to_friend_list_id(flid)
       case flid
- 	    when String
- 	      list=friend_lists.detect {|f| f.name==flid}
- 	      raise Facebooker::Session::InvalidFriendList unless list
- 	      list.flid
- 	    when FriendList
- 	      flid.flid
- 	    else
- 	      flid
- 	    end
- 	  end
+      when String
+        list=friend_lists.detect {|f| f.name==flid}
+        raise Facebooker::Session::InvalidFriendList unless list
+        list.flid
+      when FriendList
+        flid.flid
+      else
+        flid
+      end
+    end
     ##
     # Retrieve friends
     def friends(flid = nil)
-     	@friends_hash ||= {}
-     	flid=cast_to_friend_list_id(flid)
+      @friends_hash ||= {}
+      flid=cast_to_friend_list_id(flid)
       
-     	#use __blank instead of nil so that this is cached
-     	cache_key = flid||"__blank"
-     	options = {:uid=>@id}
-     	options[:flid] = flid unless flid.nil?
-     	@friends_hash[cache_key] ||= @session.post('facebook.friends.get', options,false).map do |uid|
+      #use __blank instead of nil so that this is cached
+      cache_key = flid||"__blank"
+      options = {:uid=>@id}
+      options[:flid] = flid unless flid.nil?
+      @friends_hash[cache_key] ||= @session.post('facebook.friends.get', options,false).map do |uid|
           User.new(uid, @session)
       end
       @friends_hash[cache_key]
     end
     
-     def friend_lists    
-       @friend_lists ||= @session.post('facebook.friends.getLists').map do |hash|
-         friend_list = FriendList.from_hash(hash)                               
-         friend_list.session = session                                          
-         friend_list                                                            
-       end                                                                      
-     end
+    def friend_lists
+      @friend_lists ||= @session.post('facebook.friends.getLists').map do |hash|
+        friend_list = FriendList.from_hash(hash)
+        friend_list.session = session
+        friend_list
+      end
+    end
     ###
     # Retrieve friends with user info populated
     # Subsequent calls will be retrieved from memory.
     # Optional: list of fields to retrieve as symbols
     def friends!(*fields)
-      @friends ||= session.post('facebook.users.getInfo', :fields => collect(fields), :uids => friends.map{|f| f.id}.join(',')).map do |hash|  
+      @friends ||= session.post('facebook.users.getInfo', :fields => collect(fields), :uids => friends.map{|f| f.id}.join(',')).map do |hash|
         User.new(hash['uid'], session, hash)
       end
     end
@@ -119,7 +119,7 @@ module Facebooker
         populate_from_hash!(response.first)
       end
     end
-        
+    
     def friends_with?(user_or_id)
       friends.map{|f| f.to_i}.include?(user_or_id.to_i)  
     end
@@ -203,8 +203,8 @@ module Facebooker
     end
     
     def profile_fbml
-      session.post('facebook.profile.getFBML', :uid => @id)  
-    end    
+      session.post('facebook.profile.getFBML', :uid => @id)
+    end
     
     ##
     # Set the profile FBML for this user
@@ -279,7 +279,7 @@ module Facebooker
     # Checks to see if the user has enabled the given extended permission
     def has_permission?(ext_perm) # ext_perm = email, offline_access, status_update, photo_upload, create_listing, create_event, rsvp_event, sms
       session.post('facebook.users.hasAppPermission',:ext_perm=>ext_perm) == "1"
-    end    
+    end
     
     ##
     # Convenience method to send email to the current user
@@ -315,11 +315,10 @@ module Facebooker
       id == other_user.id
     end
     
-    
     # register a user with Facebook
     # users should be a hast with at least an :email field
     # you can optionally provide an :account_id field as well
-        
+    
     def self.register(users)
       user_map={}
       users=users.map do |h|
@@ -372,6 +371,7 @@ module Facebooker
     end
     
     private
+    
     def publish(feed_story_or_action)
       session.post(Facebooker::Feed::METHODS[feed_story_or_action.class.name.split(/::/).last], feed_story_or_action.to_params) == "1" ? true : false
     end

@@ -6,7 +6,7 @@ module Facebooker
         assert_not_nil facebook_redirect_url
         assert_equal url, facebook_redirect_url
       end
-
+      
       def follow_facebook_redirect!
         facebook_post facebook_redirect_url
       end
@@ -22,6 +22,7 @@ module Facebooker
       def facebook_put(path,params={})
         facebook_verb(:put,path,params)
       end
+      
       def facebook_delete(path,params={})
         facebook_verb(:delete,path,params)
       end
@@ -29,7 +30,7 @@ module Facebooker
       def facebook_verb(verb,path, params={})
         params = default_facebook_parameters.update(params)
         params.merge!(:fb_sig => generate_signature(facebook_params(params).stringify_keys))
-
+        
         params = params.update(:canvas => true).update(params)
         send verb, path, params
       end
@@ -49,9 +50,9 @@ module Facebooker
 
       def default_facebook_parameters
         {
-          :fb_sig_added => "1", 
-          :fb_sig_session_key => "facebook_session_key", 
-          :fb_sig_user => "1234", 
+          :fb_sig_added => "1",
+          :fb_sig_session_key => "facebook_session_key",
+          :fb_sig_user => "1234",
           :fb_sig_expires => "0",
           :fb_sig_in_canvas => "1",
           :fb_sig_time => Time.now.to_f
@@ -59,7 +60,7 @@ module Facebooker
       end
 
       def facebook_params(params)
-        params.inject({}) do |fb_params, pair| 
+        params.inject({}) do |fb_params, pair|
           unless pair.first.to_s.match(/^fb_sig_/).nil?
             fb_params[pair.first] = pair.last
           end
@@ -85,4 +86,3 @@ module Facebooker
     end
   end
 end
-        

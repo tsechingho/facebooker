@@ -29,13 +29,12 @@ module Facebooker
     # Optional:   
     # +name+ The name of the cookie. If not specified, all the cookies for the given user get returned.
     def get_cookies(user, name=nil)
-      @cookies = @session.post( 
-        'facebook.data.getCookies', :uid => User.cast_to_facebook_id(user), :name => name) do |response|
-          response.map do |hash|
-            Cookie.from_hash(hash)
-          end
+      @cookies = @session.post( 'facebook.data.getCookies', :uid => User.cast_to_facebook_id(user), :name => name) do |response|
+        response.map do |hash|
+          Cookie.from_hash(hash)
+        end
       end
-    end   
+    end
     
     ##
     # ** BETA ***
@@ -44,7 +43,7 @@ module Facebooker
     def get_preference(pref_id)
       @session.post('facebook.data.getUserPreference', :pref_id=>pref_id)
     end
-
+    
     ##
     # ** BETA ***
     # Sets a preference on Facebook

@@ -1,6 +1,6 @@
 begin
   unless Object.const_defined?("ActiveSupport") and ActiveSupport.const_defined?("JSON")
-    require 'json' 
+    require 'json'
     module Facebooker
       def self.json_decode(str)
         JSON.parse(str)
@@ -12,9 +12,9 @@ begin
         ActiveSupport::JSON.decode(str)
       end
     end
-  end 
+  end
 rescue
-  require 'json' 
+  require 'json'
 end
 require 'zlib'
 require 'digest/md5'
@@ -22,15 +22,13 @@ require 'digest/md5'
 
 
 module Facebooker
-      
-    class << self
-    
+  class << self
     def load_configuration(facebooker_yaml_file)
       if File.exist?(facebooker_yaml_file)
         if defined? RAILS_ENV
-          facebooker = YAML.load_file(facebooker_yaml_file)[RAILS_ENV] 
+          facebooker = YAML.load_file(facebooker_yaml_file)[RAILS_ENV]
         else
-          facebooker = YAML.load_file(facebooker_yaml_file)           
+          facebooker = YAML.load_file(facebooker_yaml_file)
         end
         ENV['FACEBOOK_API_KEY'] = facebooker['api_key']
         ENV['FACEBOOK_SECRET_KEY'] = facebooker['secret_key']
@@ -48,10 +46,10 @@ module Facebooker
     end
     
     def facebooker_config
-      @facebooker_configuration 
+      @facebooker_configuration
     end
     
-     def current_adapter=(adapter_class)
+    def current_adapter=(adapter_class)
       @current_adapter = adapter_class
     end
     
@@ -62,11 +60,11 @@ module Facebooker
     def load_adapter(params)
       self.current_adapter = Facebooker::AdapterBase.load_adapter(params)
     end
-      
+    
     def facebook_path_prefix=(path)
       current_adapter.facebook_path_prefix = path
     end
-  
+    
     # Default is canvas_page_name in yml file
     def facebook_path_prefix
       current_adapter.facebook_path_prefix
@@ -99,16 +97,14 @@ module Facebooker
     def timeout
       @timeout
     end
-   
+    
     [:api_key,:secret_key, :www_server_base_url,:login_url_base,:install_url_base,:api_rest_path,:api_server_base,:api_server_base_url,:canvas_server_base].each do |delegated_method|
       define_method(delegated_method){ return current_adapter.send(delegated_method)}
     end
     
-    
-       def path_prefix
+    def path_prefix
       @path_prefix
-      end
-    
+    end
     
     # Set the asset path to the canvas path for just this one request
     # by definition, we will make this a canvas request
@@ -123,11 +119,11 @@ module Facebooker
         ActionController::Base.asset_host = original_asset_host
       end
     end
-  
+    
     # If this request is_canvas_request
     # then use the application name as the url root
     def request_for_canvas(is_canvas_request)
-      original_path_prefix = @path_prefix 
+      original_path_prefix = @path_prefix
       begin
         @path_prefix = facebook_path_prefix if is_canvas_request
         yield

@@ -32,7 +32,7 @@ module Facebooker
         element.text_value
       end
     end
-
+    
     def self.array_of_hashes(response_element, element_name)
       array_of(response_element, element_name) do |element|
         hashinate(element)
@@ -63,9 +63,9 @@ module Facebooker
           anonymous_field_from(child, hash) || child.text_value
         else
           if child.attributes['list'] == 'true'
-            child.children.reject{|c| c.kind_of? REXML::Text}.map do |subchild| 
-                hash_or_value_for(subchild)
-            end     
+            child.children.reject{|c| c.kind_of? REXML::Text}.map do |subchild|
+              hash_or_value_for(subchild)
+            end
           else
             child.children.reject{|c| c.kind_of? REXML::Text}.inject({}) do |subhash, subchild|
               subhash[subchild.name] = hash_or_value_for(subchild)
@@ -74,7 +74,7 @@ module Facebooker
           end
         end
         hash
-      end      
+      end
     end
     
     def self.anonymous_field_from(child, hash)
@@ -83,7 +83,7 @@ module Facebooker
       end
     end
     
-  end  
+  end
   
   class CreateToken < Parser#:nodoc:
     def self.process(data)
@@ -96,9 +96,9 @@ module Facebooker
       array_of_text_values(element("connect_registerUsers_response", data), "connect_registerUsers_response_elt")
     end
   end
-
+  
   class GetSession < Parser#:nodoc:
-    def self.process(data)      
+    def self.process(data)
       hashinate(element('auth_getSession_response', data))
     end
   end
@@ -114,7 +114,7 @@ module Facebooker
       array_of_hashes(element('friends_getLists_response', data), 'friendlist')
     end
   end
- 
+  
   class UserInfo < Parser#:nodoc:
     def self.process(data)
       array_of_hashes(element('users_getInfo_response', data), 'user')
@@ -132,43 +132,43 @@ module Facebooker
       Integer(element('users_getLoggedInUser_response', data).text_value)
     end
   end
-
+  
   class PagesIsAdmin < Parser#:nodoc:
     def self.process(data)
       element('pages_isAdmin_response', data).text_value == '1'
     end
   end
-
+  
   class PagesGetInfo < Parser#:nodoc:
     def self.process(data)
       array_of_hashes(element('pages_getInfo_response', data), 'page')
     end
   end
-
+  
   class PublishStoryToUser < Parser#:nodoc:
     def self.process(data)
       element('feed_publishStoryToUser_response', data).text_value
     end
   end
-
+  
   class RegisterTemplateBundle < Parser#:nodoc:
     def self.process(data)
       element('feed_registerTemplateBundle_response', data).text_value.to_i
     end
   end
-
+  
   class GetRegisteredTemplateBundles < Parser
     def self.process(data)
       array_of_hashes(element('feed_getRegisteredTemplateBundles_response',data), 'template_bundle')
     end
   end
-
+  
   class DeactivateTemplateBundleByID < Parser#:nodoc:
     def self.process(data)
       element('feed_deactivateTemplateBundleByID_response', data).text_value == '1'
     end
   end
-
+  
   class PublishUserAction < Parser#:nodoc:
     def self.process(data)
       element('feed_publishUserAction_response', data).children[1].text_value == "1"
@@ -191,7 +191,7 @@ module Facebooker
     def self.process(data)
       element('admin_setAppProperties_response', data).text_value
     end
-  end  
+  end
   
   class GetAppProperties < Parser#:nodoc:
     def self.process(data)
@@ -205,7 +205,7 @@ module Facebooker
     end
   end
   
-  class BatchRun < Parser #:nodoc:
+  class BatchRun < Parser#:nodoc:
     class << self
       def current_batch=(current_batch)
         Thread.current[:facebooker_current_batch]=current_batch
@@ -244,14 +244,14 @@ module Facebooker
     def self.process(data)
       element('notifications_send_response', data).text_value
     end
-  end 
-
+  end
+  
   class NotificationsSendEmail < Parser#:nodoc:
-    def self.process(data)  
+    def self.process(data)
       element('notifications_sendEmail_response', data).text_value
     end
   end
-
+  
   class GetTags < Parser#nodoc:
     def self.process(data)
       array_of_hashes(element('photos_getTags_response', data), 'photo_tag')
@@ -263,7 +263,7 @@ module Facebooker
       element('photos_addTag_response', data)
     end
   end
-
+  
   class GetPhotos < Parser#nodoc:
     def self.process(data)
       array_of_hashes(element('photos_get_response', data), 'photo')
@@ -280,7 +280,7 @@ module Facebooker
     def self.process(data)
       hashinate(element('photos_createAlbum_response', data))
     end
-  end  
+  end
   
   class UploadPhoto < Parser#:nodoc:
     def self.process(data)
@@ -401,7 +401,7 @@ module Facebooker
         memo
       end
     end
-
+  
   private
     def self.are_friends?(raw_value)
       if raw_value == '1'
@@ -431,19 +431,19 @@ module Facebooker
       element('data_setUserPreference_response', data).text_value
     end
   end
-    
+  
   class UserHasPermission < Parser
     def self.process(data)
       element('users_hasAppPermission_response', data).text_value
     end
-  end  
-
+  end
+  
   class Errors < Parser#:nodoc:
     EXCEPTIONS = {
-      1 	=> Facebooker::Session::UnknownError,
-      2 	=> Facebooker::Session::ServiceUnavailable,
-      4 	=> Facebooker::Session::MaxRequestsDepleted,
-      5 	=> Facebooker::Session::HostNotAllowed,
+      1   => Facebooker::Session::UnknownError,
+      2   => Facebooker::Session::ServiceUnavailable,
+      4   => Facebooker::Session::MaxRequestsDepleted,
+      5   => Facebooker::Session::HostNotAllowed,
       100 => Facebooker::Session::MissingOrInvalidParameter,
       101 => Facebooker::Session::InvalidAPIKey,
       102 => Facebooker::Session::SessionExpired,
@@ -463,7 +463,7 @@ module Facebooker
       345 => Facebooker::Session::BlankFeedTitle,
       346 => Facebooker::Session::FeedBodyLengthTooLong,
       347 => Facebooker::Session::InvalidFeedPhotoSource,
-      348 => Facebooker::Session::InvalidFeedPhotoLink,      
+      348 => Facebooker::Session::InvalidFeedPhotoLink,
       330 => Facebooker::Session::FeedMarkupInvalid,
       360 => Facebooker::Session::FeedTitleDataInvalid,
       361 => Facebooker::Session::FeedTitleTemplateInvalid,

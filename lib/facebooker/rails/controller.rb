@@ -11,8 +11,7 @@ module Facebooker
         controller.helper_attr :facebook_session_parameters
         controller.helper_method :request_comes_from_facebook?
       end
-
-    
+      
       def facebook_session
         @facebook_session
       end
@@ -21,11 +20,10 @@ module Facebooker
         {:fb_sig_session_key=>params[:fb_sig_session_key]}
       end
       
-      
       def set_facebook_session
-        returning session_set = session_already_secured? ||  secure_with_facebook_params! || secure_with_cookies! || secure_with_token!  do
+        returning session_set = session_already_secured? ||  secure_with_facebook_params! || secure_with_cookies! || secure_with_token! do
           if session_set
-            capture_facebook_friends_if_available! 
+            capture_facebook_friends_if_available!
             Session.current = facebook_session
           end
         end
@@ -33,7 +31,7 @@ module Facebooker
       
       def facebook_params
         @facebook_params ||= verified_facebook_params
-      end      
+      end
       
       def redirect_to(*args)
         if request_is_for_a_facebook_canvas? and !request_is_facebook_tab?
@@ -42,7 +40,7 @@ module Facebooker
           super
         end
       end
-            
+      
       private
       
       def session_already_secured?
@@ -58,7 +56,7 @@ module Facebooker
       
       def clear_facebook_session_information
         session[:facebook_session] = nil
-        @facebook_session=nil        
+        @facebook_session=nil
       end
       
       def valid_session_key_in_session?
@@ -68,7 +66,7 @@ module Facebooker
           clear_facebook_session_information
           false
         else
-          !session[:facebook_session].blank? &&  (params[:fb_sig_session_key].blank? || session[:facebook_session].session_key == facebook_params[:session_key])
+          !session[:facebook_session].blank? && (params[:fb_sig_session_key].blank? || session[:facebook_session].session_key == facebook_params[:session_key])
         end
       end
       
@@ -78,31 +76,31 @@ module Facebooker
         fb_cookie_names.each {|name| cookies.delete(name, :domain=>cookie_domain)}
         cookies.delete Facebooker.api_key
       end
-
+      
       def fb_cookie_prefix
         Facebooker.api_key+"_"
       end
-
+      
       def fb_cookie_names
         fb_cookie_names = cookies.keys.select{|k| k.starts_with?(fb_cookie_prefix)}
       end
-
+      
       def secure_with_cookies!
-          parsed = {}
-          
-          fb_cookie_names.each { |key| parsed[key[fb_cookie_prefix.size,key.size]] = cookies[key] }
- 
-          #returning gracefully if the cookies aren't set or have expired
-          return unless parsed['session_key'] && parsed['user'] && parsed['expires'] && parsed['ss'] 
-          return unless Time.at(parsed['expires'].to_f) > Time.now
-          
-          #if we have the unexpired cookies, we'll throw an exception if the sig doesn't verify
-          verify_signature(parsed,cookies[Facebooker.api_key])
-          
-          @facebook_session = new_facebook_session
-          @facebook_session.secure_with!(parsed['session_key'],parsed['user'],parsed['expires'],parsed['ss'])
+        parsed = {}
+        
+        fb_cookie_names.each { |key| parsed[key[fb_cookie_prefix.size,key.size]] = cookies[key] }
+        
+        #returning gracefully if the cookies aren't set or have expired
+        return unless parsed['session_key'] && parsed['user'] && parsed['expires'] && parsed['ss']
+        return unless Time.at(parsed['expires'].to_f) > Time.now
+        
+        #if we have the unexpired cookies, we'll throw an exception if the sig doesn't verify
+        verify_signature(parsed,cookies[Facebooker.api_key])
+        
+        @facebook_session = new_facebook_session
+        @facebook_session.secure_with!(parsed['session_key'],parsed['user'],parsed['expires'],parsed['ss'])
       end
-    
+      
       def secure_with_token!
         if params['auth_token']
           @facebook_session = new_facebook_session
@@ -146,18 +144,18 @@ module Facebooker
           end
         end
       end
-            
+      
       def blank?(value)
-        (value == '0' || value.nil? || value == '')        
+        (value == '0' || value.nil? || value == '')
       end
-
+      
       def verified_facebook_params
         facebook_sig_params = params.inject({}) do |collection, pair|
           collection[pair.first.sub(/^fb_sig_/, '')] = pair.last if pair.first[0,7] == 'fb_sig_'
           collection
         end
         verify_signature(facebook_sig_params,params['fb_sig'])
-
+        
         facebook_sig_params.inject(HashWithIndifferentAccess.new) do |collection, pair| 
           collection[pair.first] = facebook_parameter_conversions[pair.first].call(pair.last)
           collection
@@ -195,7 +193,7 @@ module Facebooker
       def request_comes_from_facebook?
         request_is_for_a_facebook_canvas? || request_is_facebook_ajax? || request_is_fb_ping?
       end
-
+      
       def request_is_fb_ping?
         !params['fb_sig'].blank?
       end
@@ -211,11 +209,10 @@ module Facebooker
       def request_is_facebook_ajax?
         params["fb_sig_is_mockajax"]=="1" || params["fb_sig_is_ajax"]=="1"
       end
+      
       def xml_http_request?
         request_is_facebook_ajax? || super
       end
-      
-      
       
       def application_is_installed?
         facebook_params['added']
@@ -224,9 +221,11 @@ module Facebooker
       def ensure_has_status_update
         has_extended_permission?("status_update") || application_needs_permission("status_update")
       end
+      
       def ensure_has_photo_upload
         has_extended_permission?("photo_upload") || application_needs_permission("photo_upload")
       end
+      
       def ensure_has_create_listing
         has_extended_permission?("create_listing") || application_needs_permission("create_listing")
       end
@@ -257,10 +256,10 @@ module Facebooker
       def set_fbml_format
         params[:format]="fbml" if request_comes_from_facebook?
       end
+      
       def set_adapter
         Facebooker.load_adapter(params) if(params[:fb_sig_api_key])
       end
-
       
       module ClassMethods
         #
@@ -273,6 +272,10 @@ module Facebooker
         
         def ensure_application_is_installed_by_facebook_user(options = {})
           before_filter :ensure_application_is_installed_by_facebook_user, options
+        end
+        
+        def request_comes_from_facebook?
+          request_is_for_a_facebook_canvas? || request_is_facebook_ajax?
         end
       end
     end

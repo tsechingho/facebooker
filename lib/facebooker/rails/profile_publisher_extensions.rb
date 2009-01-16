@@ -14,8 +14,10 @@ module Facebooker
       # publish_enabled controlls whether the post form is active by default. If it isn't, you'll need to use fbjs to activate it
       # comment_enabled controls whether to include a comment box
       def render_publisher_interface(fbml,publish_enabled=true,comment_enabled=false)
-        render :json=>{:content=>{:fbml=>fbml,:publishEnabled=>publish_enabled,:commentEnabled=>comment_enabled},
-         :method=>"publisher_getInterface"}
+        render :json=>{
+          :content=>{:fbml=>fbml,:publishEnabled=>publish_enabled,:commentEnabled=>comment_enabled},
+          :method=>"publisher_getInterface"
+        }
       end
       
       # render an error while publishing the template
@@ -28,12 +30,8 @@ module Facebooker
       # For instance, AttackPublisher.create_attack(@attack)
       # The template must have been registered previously
       def render_publisher_response(user_action)
-        render :json=>{:content=> {
-            :feed=>{
-              :template_id=>user_action.template_id,
-              :template_data=>user_action.data
-            }
-          },
+        render :json=>{
+          :content=>{:feed=>{:template_id=>user_action.template_id,:template_data=>user_action.data}},
           :method=>"publisher_getFeedStory"
         }
       end

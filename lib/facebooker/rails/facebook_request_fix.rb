@@ -8,11 +8,11 @@ module ::ActionController
     end
     
     if new.methods.include?("request_method")
-      alias_method_chain :request_method, :facebooker 
+      alias_method_chain :request_method, :facebooker
     end
     
     def xml_http_request_with_facebooker?
-      parameters["fb_sig_is_mockajax"] == "1"  ||
+      parameters["fb_sig_is_mockajax"] == "1" ||
       parameters["fb_sig_is_ajax"] == "1" ||
       xml_http_request_without_facebooker?
     end

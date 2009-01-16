@@ -9,7 +9,7 @@ module Facebooker
       @uri=params.map{|k,v| "#{k}=#{CGI.escape(v.to_s)}"}.join("&")
       @proc=proc
     end
-  
+    
     def result=(result_object)
       @result = @proc.nil? ? result_object : @proc.call(result_object)
     end
@@ -21,16 +21,15 @@ module Facebooker
     def exception_raised?
       @exception.nil? ? false : raise(@exception)
     end
-
+    
     def respond_to?(name)
       super || @result.respond_to?(name)
     end
-  
+    
     def ===(other)
       other === @result
     end
-  
-  
+    
     def method_missing(name,*args,&proc)
       if @exception
         raise @exception

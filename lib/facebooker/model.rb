@@ -1,6 +1,6 @@
 module Facebooker
   ##
-  # helper methods primarily supporting the management of Ruby objects which are populatable via Hashes.  
+  # helper methods primarily supporting the management of Ruby objects which are populatable via Hashes.
   # Since most Facebook API calls accept and return hashes of data (as XML), the Model module allows us to
   # directly populate a model's attributes given a Hash with matching key names.
   module Model
@@ -21,12 +21,12 @@ module Facebooker
       end
       
       ##
-      # Create a standard attr_writer and a populating_attr_reader      
+      # Create a standard attr_writer and a populating_attr_reader
       def populating_attr_accessor(*symbols)
         attr_writer *symbols
         populating_attr_reader *symbols
       end
-
+      
       ## 
       # Create a reader that will attempt to populate the model if it has not already been populated
       def populating_attr_reader(*symbols)
@@ -42,7 +42,7 @@ module Facebooker
         populating_attr_reader symbol
         hash_settable_writer(symbol, klass)
       end
-        
+      
       def populating_hash_settable_list_accessor(symbol, klass)
         populating_attr_reader symbol
         hash_settable_list_writer(symbol, klass)
@@ -59,7 +59,7 @@ module Facebooker
       def hash_settable_writer(symbol, klass)
         define_method("#{symbol}=") do |value|
           instance_variable_set("@#{symbol}", value.kind_of?(Hash) ? klass.from_hash(value) : value)
-        end        
+        end
       end
       
       #
@@ -76,7 +76,7 @@ module Facebooker
             item.kind_of?(Hash) ? klass.from_hash(item) : item
           end)
         end
-      end      
+      end
     end
     
     ##
@@ -95,11 +95,11 @@ module Facebooker
     def initialize(hash = {})
       populate_from_hash!(hash)
     end
-
+    
     def populate
       raise NotImplementedError, "#{self.class} included me and should have overriden me"
     end
-
+    
     def populated?
       !@populated.nil?
     end
@@ -111,13 +111,13 @@ module Facebooker
         hash.each do |key, value|
           set_attr_method = "#{key}="
           if respond_to?(set_attr_method)
-            self.__send__(set_attr_method, value) 
+            self.__send__(set_attr_method, value)
           else
             Facebooker::Logging.log_info("**Warning**, Attempt to set non-attribute: #{key}",hash)
           end
         end
         @populated = true
-      end      
-    end    
+      end
+    end
   end
 end

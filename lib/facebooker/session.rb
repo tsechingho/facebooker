@@ -15,8 +15,8 @@ module Facebooker
     class InvalidAPIKey < StandardError; end
     class SessionExpired < StandardError; end
     class CallOutOfOrder < StandardError; end
-    class IncorrectSignature     < StandardError; end
-    class SignatureTooOld     < StandardError; end
+    class IncorrectSignature < StandardError; end
+    class SignatureTooOld < StandardError; end
     class TooManyUserCalls < StandardError; end
     class TooManyUserActionCalls < StandardError; end
     class InvalidFeedTitleLink < StandardError; end
@@ -25,7 +25,7 @@ module Facebooker
     class BlankFeedTitle < StandardError; end
     class FeedBodyLengthTooLong < StandardError; end
     class InvalidFeedPhotoSource < StandardError; end
-    class InvalidFeedPhotoLink < StandardError; end    
+    class InvalidFeedPhotoLink < StandardError; end
     class TemplateDataMissingRequiredTokens < StandardError; end
     class FeedMarkupInvalid < StandardError; end
     class FeedTitleDataInvalid < StandardError; end
@@ -100,7 +100,7 @@ module Facebooker
     end
     
     def install_url_optional_parameters(options)
-      optional_parameters = []      
+      optional_parameters = []
       optional_parameters += add_next_parameters(options)
       optional_parameters.join
     end
@@ -154,7 +154,7 @@ module Facebooker
     def secure!
       response = post 'facebook.auth.getSession', :auth_token => auth_token
       secure_with!(response['session_key'], response['uid'], response['expires'], response['secret'])
-    end    
+    end
     
     def secure_with!(session_key, uid = nil, expires = nil, secret_from_session = nil)
       @session_key = session_key
@@ -211,19 +211,19 @@ module Facebooker
         end
       end
     end
-
+    
     def users_standard(user_ids, fields=[])
       post("facebook.users.getStandardInfo",:uids=>user_ids.join(","),:fields=>User.standard_fields(fields)) do |users|
         users.map { |u| User.new(u)}
       end
     end
-
+    
     def users(user_ids, fields=[])
       post("facebook.users.getInfo",:uids=>user_ids.join(","),:fields=>User.user_fields(fields)) do |users|
         users.map { |u| User.new(u)}
       end
     end
-
+    
     def pages(options = {})
       raise ArgumentError, 'fields option is mandatory' unless options.has_key?(:fields)
       @pages ||= {}
@@ -233,7 +233,7 @@ module Facebooker
         end
       end
     end
-
+    
     #
     # Returns a proxy object for handling calls to Facebook cached items
     # such as images and FBML ref handles
@@ -269,7 +269,7 @@ module Facebooker
     
     def get_photos(pids = nil, subj_id = nil,  aid = nil)
       if [subj_id, pids, aid].all? {|arg| arg.nil?}
-        raise ArgumentError, "Can't get a photo without a picture, album or subject ID" 
+        raise ArgumentError, "Can't get a photo without a picture, album or subject ID"
       end
       @photos = post('facebook.photos.get', :subj_id => subj_id, :pids => pids, :aid => aid ) do |response|
         response.map do |hash|
@@ -280,23 +280,23 @@ module Facebooker
     
     def get_albums(aids)
       @albums = post('facebook.photos.getAlbums', :aids => aids) do |response|
-        response.map do |hash|        
+        response.map do |hash|
           Album.from_hash(hash)
         end
       end
     end
     
     def get_tags(pids)
-      @tags = post('facebook.photos.getTags', :pids => pids)  do |response|
+      @tags = post('facebook.photos.getTags', :pids => pids) do |response|
         response.map do |hash|
           Tag.from_hash(hash)
         end
       end
     end
     
-    def add_tags(pid, x, y, tag_uid = nil, tag_text = nil )
+    def add_tags(pid, x, y, tag_uid = nil, tag_text = nil)
       if [tag_uid, tag_text].all? {|arg| arg.nil?}
-        raise ArgumentError, "Must enter a name or string for this tag"        
+        raise ArgumentError, "Must enter a name or string for this tag"
       end
       @tags = post('facebook.photos.addTag', :pid => pid, :tag_uid => tag_uid, :tag_text => tag_text, :x => x, :y => y )
     end
@@ -332,7 +332,7 @@ module Facebooker
         short_story_templates = [short_story_templates] unless short_story_templates.is_a?(Array)
         parameters[:short_story_templates]= short_story_templates.to_json
       end
-
+      
       if !full_story_template.blank?
         parameters[:full_story_template]= full_story_template.to_json
       end
@@ -350,10 +350,9 @@ module Facebooker
       post("facebook.feed.publishUserAction", parameters)
     end
     
-    
     ##
     # Send email to as many as 100 users at a time
-    def send_email(user_ids, subject, text, fbml = nil) 			
+    def send_email(user_ids, subject, text, fbml = nil)
       user_ids = Array(user_ids)
       params = {:fbml => fbml, :recipients => user_ids.map{ |id| User.cast_to_facebook_id(id)}.join(','), :text => text, :subject => subject} 
       post 'facebook.notifications.sendEmail', params
@@ -364,12 +363,12 @@ module Facebooker
       fields_to_serialize.each_with_index{|field, index| instance_variable_set_value(field, variables[index])}
     end
     
-    # Only serialize the bare minimum to recreate the session.    
+    # Only serialize the bare minimum to recreate the session.
     def marshal_dump#:nodoc:
       fields_to_serialize.map{|field| instance_variable_value(field)}
     end
     
-    # Only serialize the bare minimum to recreate the session. 
+    # Only serialize the bare minimum to recreate the session.
     def to_yaml( opts = {} )
       YAML::quick_emit(self.object_id, opts) do |out|
         out.map(taguri) do |map|
@@ -408,6 +407,7 @@ module Facebooker
         end
         super
       end
+      
       private
         def auth_request_methods
           ['facebook.auth.getSession', 'facebook.auth.createToken']
@@ -503,7 +503,6 @@ module Facebooker
       end
     end
     
-    
     def self.configuration_file_path
       @configuration_file_path || File.expand_path("~/.facebookerrc")
     end
@@ -522,7 +521,7 @@ module Facebooker
       
       # This ultimately delgates to the adapter
       def self.extract_key_from_environment(key_name)
-             Facebooker.send(key_name.to_s + "_key") rescue nil
+        Facebooker.send(key_name.to_s + "_key") rescue nil
       end
       
       def self.extract_key_from_configuration_file(key_name)
@@ -538,7 +537,7 @@ module Facebooker
       end
       
       def service
-        @service ||= Service.new(Facebooker.api_server_base, Facebooker.api_rest_path, @api_key)      
+        @service ||= Service.new(Facebooker.api_server_base, Facebooker.api_rest_path, @api_key)
       end
       
       def uid

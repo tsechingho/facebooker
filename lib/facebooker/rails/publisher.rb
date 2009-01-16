@@ -95,7 +95,7 @@ module Facebooker
       FULL=4
       
       def initialize
-        @controller = PublisherController.new        
+        @controller = PublisherController.new
       end
       
       # use facebook options everywhere
@@ -104,7 +104,6 @@ module Facebooker
       end
       
       class FacebookTemplate < ::ActiveRecord::Base
-        
         
         cattr_accessor :template_cache
         self.template_cache = {}
@@ -122,7 +121,6 @@ module Facebooker
         end
         
         class << self
-          
           def register(klass,method)
             publisher = setup_publisher(klass,method)            
             template_id = Facebooker::Session.create.register_template_bundle(publisher.one_line_story_templates,publisher.short_story_templates,publisher.full_story_template,publisher.action_links)
@@ -135,8 +133,9 @@ module Facebooker
           end
           
           def for_class_and_method(klass,method)
-            find_cached(klass,method) 
+            find_cached(klass,method)
           end
+          
           def bundle_id_for_class_and_method(klass,method)
             for_class_and_method(klass,method).bundle_id
           end
@@ -193,7 +192,6 @@ module Facebooker
       cattr_accessor :skip_registry
       self.skip_registry = false
       
-      
       class InvalidSender < StandardError; end
       class UnknownBodyType < StandardError; end
       class UnspecifiedBodyType < StandardError; end
@@ -202,11 +200,11 @@ module Facebooker
         attr_accessor :text
         attr_accessor :fbml
       end
-  
+      
       class Notification
         attr_accessor :fbml
       end
-  
+      
       class Profile
         attr_accessor :profile
         attr_accessor :profile_action
@@ -235,7 +233,7 @@ module Facebooker
       
       cattr_accessor :ignore_errors
       attr_accessor :_body
-
+      
       def recipients(*args)
         if args.size==0
           @recipients
@@ -249,10 +247,9 @@ module Facebooker
           @from
         else
           @from=args.first
-        end        
+        end
       end
-
-
+      
       def send_as(option)
         self._body=case option
         when :action
@@ -319,7 +316,7 @@ module Facebooker
       def action_link(text,target)
         {:text=>text, :href=>target}
       end
-  
+      
       def requires_from_user?(from,body)
         ! (announcement_notification?(from,body) or ref_update?(body) or profile_update?(body))
       end
@@ -331,7 +328,7 @@ module Facebooker
       def ref_update?(body)
         body.is_a?(Ref)
       end
-  
+      
       def announcement_notification?(from,body)
         from.nil? and body.is_a?(Notification)
       end
@@ -352,15 +349,12 @@ module Facebooker
         when Notification
           (from.nil? ? Facebooker::Session.create : from.session).send_notification(@recipients,_body.fbml)
         when Email
-          from.session.send_email(@recipients, 
-                                             _body.title, 
-                                             _body.text, 
-                                             _body.fbml)
+          from.session.send_email(@recipients, _body.title, _body.text, _body.fbml)
         when Profile
-         # If recipient and from aren't the same person, create a new user object using the
-         # userid from recipient and the session from from
-         @from = Facebooker::User.new(Facebooker::User.cast_to_facebook_id(@recipients.first),Facebooker::Session.create) 
-         @from.set_profile_fbml(_body.profile, _body.mobile_profile, _body.profile_action, _body.profile_main)
+          # If recipient and from aren't the same person, create a new user object using the
+          # userid from recipient and the session from from
+          @from = Facebooker::User.new(Facebooker::User.cast_to_facebook_id(@recipients.first),Facebooker::Session.create)
+          @from.set_profile_fbml(_body.profile, _body.mobile_profile, _body.profile_action, _body.profile_main)
         when Ref
           Facebooker::Session.create.server_cache.set_ref_handle(_body.handle,_body.fbml)
         when UserAction
@@ -369,13 +363,13 @@ module Facebooker
           raise UnspecifiedBodyType.new("You must specify a valid send_as")
         end
       end
-
+      
       # nodoc
       # needed for actionview
       def logger
         RAILS_DEFAULT_LOGGER
       end
-
+      
       # nodoc
       # delegate to action view. Set up assigns and render
       def render(opts)
@@ -383,22 +377,20 @@ module Facebooker
         body = opts.delete(:assigns) || {}
         initialize_template_class(body.dup.merge(:controller=>self)).render(opts)
       end
-
-
+      
       def initialize_template_class(assigns)
         template_root = "#{RAILS_ROOT}/app/views"
-	      controller_root = File.join(template_root,self.class.controller_path)
+        controller_root = File.join(template_root,self.class.controller_path)
         #only do this on Rails 2.1
-	      if ActionController::Base.respond_to?(:append_view_path)
-  	      # only add the view path once
-	        ActionController::Base.append_view_path(controller_root) unless ActionController::Base.view_paths.include?(controller_root)
-	      end
+        if ActionController::Base.respond_to?(:append_view_path)
+          # only add the view path once
+          ActionController::Base.append_view_path(controller_root) unless ActionController::Base.view_paths.include?(controller_root)
+        end
         returning ActionView::Base.new([template_root,controller_root], assigns, self) do |template|
           template.controller=self
           template.extend(self.class.master_helper_module)
         end
       end
-  
       
       self.master_helper_module = Module.new
       self.master_helper_module.module_eval do
@@ -449,7 +441,7 @@ module Facebooker
           else
             super
           end
-      
+          
           #now create the item
           (publisher=new).send(method,*args)
           case publisher._body
@@ -460,11 +452,11 @@ module Facebooker
           
           should_send ? publisher.send_message(method) : publisher._body
         end
-    
+        
         def default_url_options
           {:host => Facebooker.canvas_server_base + Facebooker.facebook_path_prefix}
         end
-    
+        
         def controller_path
           self.to_s.underscore
         end
@@ -473,7 +465,7 @@ module Facebooker
           args.each do |arg|
             case arg
             when Symbol,String
-              add_template_helper("#{arg.to_s.classify}Helper".constantize)              
+              add_template_helper("#{arg.to_s.classify}Helper".constantize)
             when Module
               add_template_helper(arg)
             end
@@ -484,16 +476,15 @@ module Facebooker
           master_helper_module.send :include,helper_module
           include master_helper_module
         end
-
-    
+        
         def inherited(child)
-          super          
+          super
           child.master_helper_module=Module.new
           child.master_helper_module.__send__(:include,self.master_helper_module)
           child.send(:include, child.master_helper_module)
           FacebookTemplate.clear_cache!
         end
-    
+        
       end
       class PublisherController
         include Facebooker::Rails::Publisher.master_helper_module

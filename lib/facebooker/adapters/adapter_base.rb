@@ -1,9 +1,11 @@
 module Facebooker
-
   class AdapterBase
+
     class UnableToLoadAdapter < Exception; end
+
     require 'active_support/inflector'
     include  ActiveSupport::CoreExtensions::String::Inflections
+
     def facebook_path_prefix
       "/" + (@facebook_path_prefix || canvas_page_name || ENV['FACEBOOK_CANVAS_PATH'] || ENV['FACEBOOKER_RELATIVE_URL_ROOT'])
     end
@@ -12,7 +14,7 @@ module Facebooker
       @facebook_path_prefix = prefix
     end
 
-    def  facebooker_config
+    def facebooker_config
       @config
     end
 
@@ -28,10 +30,9 @@ module Facebooker
       @config = config
     end
 
-    def  self.facebooker_config
+    def self.facebooker_config
       Facebooker.facebooker_config
     end
-
 
     def self.load_adapter(params)
 
