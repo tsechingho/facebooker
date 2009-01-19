@@ -88,7 +88,7 @@ module ActionView
       # Altered to throw an error on :popup and sanitize the javascript
       # for Facebook.
       def convert_options_to_javascript_with_facebooker!(html_options, url ='')
-        if !request_comes_from_facebook?
+        if !respond_to?(:request_comes_from_facebook?) || !request_comes_from_facebook?
           convert_options_to_javascript_without_facebooker!(html_options,url)
         else
           confirm, popup = html_options.delete("confirm"), html_options.delete("popup")
@@ -128,12 +128,14 @@ module ActionView
             confirm_options = confirm.stringify_keys
             title = confirm_options.delete("title") || "Please Confirm"
             content = confirm_options.delete("content") || "Are you sure?"
+            button_confirm = confirm_options.delete("button_confirm") || "Okay"
+            button_cancel = confirm_options.delete("button_cancel") || "Cancel"
             style = confirm_options.empty? ? "" : convert_options_to_css(confirm_options)
           else
-            title,content,style = 'Please Confirm', confirm, ""
+            title,content,style,button_confirm,button_cancel = 'Please Confirm', confirm, "", "Okay", "Cancel"
           end
 
-          "var dlg = new Dialog().showChoice('#{escape_javascript(title.to_s)}','#{escape_javascript(content.to_s)}').setStyle(#{style});"+
+          "var dlg = new Dialog().showChoice('#{escape_javascript(title.to_s)}','#{escape_javascript(content.to_s)}','#{escape_javascript(button_confirm.to_s)}','#{escape_javascript(button_cancel.to_s)}').setStyle(#{style});"+
           "var a=this;dlg.onconfirm = function() { #{fun ? fun : 'document.setLocation(a.getHref());'} };"
         end
       end
@@ -145,7 +147,7 @@ module ActionView
         for key in options.keys
           style << ", #{key}: '#{options[key]}'"
         end
-        style << "}"
+          style << "}"
       end
 
       # Dynamically creates a form for link_to with method.  Calls confirm_javascript_function if and 
